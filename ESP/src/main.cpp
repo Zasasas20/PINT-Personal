@@ -8,6 +8,9 @@ const char* pass = "Holdonbro";
 
 const char* mqtt_server = "80.115.248.174";
 
+hw_timer_t *SendTimer = NULL;
+hw_timer_t *SwitchTimer = NULL;
+
 WiFiClient espClient;
 PubSubClient client(espClient);
 TFT_eSPI tft=TFT_eSPI();
@@ -21,6 +24,9 @@ void response(String reply){
 void Switch(){
   LEDS = !LEDS;
   digitalWrite(27, LEDS);
+
+  tft.fillScreen(TFT_BLACK);
+  tft.drawString("Switched light!", 30, 100, 12);
 }
 
 void callBack(char* topic, byte* message, unsigned int length){
@@ -87,6 +93,31 @@ void reconnecting(){
   }
 }
 
+void IRAM_ATTR sendInter(){
+  client.publish("Light/Chip", LEDS ? "True" : "False");
+
+  tft.fillScreen(TFT_BLACK);
+  tft.drawString("Updating Status...", 30, 100, 12);
+}
+
+void IRAM_ATTR switchLight(){
+  Switch();
+}
+
+void TimerSetup(){
+  SendTimer = timerBegin(0, 80, true);
+  timerAttachInterrupt(SendTimer, &sendInter ,true);
+  timerAlarmWrite(SendTimer, 500000, true);
+
+
+  SwitchTimer = timerBegin(0, 80, true);
+  timerAttachInterrupt(SwitchTimer, &switchLight ,true);
+  timerAlarmWrite(SwitchTimer, 1000000, true);
+
+  timerAlarmEnable(SendTimer);
+  timerAlarmEnable(SwitchTimer);
+}
+
 void setup() {
 
   tft.init();
@@ -96,6 +127,9 @@ void setup() {
   delay(100);
   setupMQTT();
   delay(100);
+
+  TimerSetup();
+
 }
 
 void loop() {
