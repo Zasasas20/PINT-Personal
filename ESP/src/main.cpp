@@ -8,8 +8,8 @@ const char* pass = "Holdonbro";
 
 const char* mqtt_server = "80.115.248.174";
 
-hw_timer_t *SendTimer = NULL;
 hw_timer_t *SwitchTimer = NULL;
+hw_timer_t *SendTimer = NULL;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -24,9 +24,6 @@ void response(String reply){
 void Switch(){
   LEDS = !LEDS;
   digitalWrite(27, LEDS);
-
-  tft.fillScreen(TFT_BLACK);
-  tft.drawString("Switched light!", 30, 100, 12);
 }
 
 void callBack(char* topic, byte* message, unsigned int length){
@@ -55,7 +52,7 @@ void callBack(char* topic, byte* message, unsigned int length){
 void setupWifi(){
   String str = "Connecting";
   tft.fillScreen(TFT_BLACK);
-  tft.drawString(str.c_str(), 30, 100);
+  tft.drawString(str.c_str(), 0, 100);
   WiFi.begin(ssid, pass);
 
   while (WiFi.status() != WL_CONNECTED){
@@ -93,11 +90,13 @@ void reconnecting(){
   }
 }
 
-void IRAM_ATTR sendInter(){
+void Send(){
   client.publish("Light/Chip", LEDS ? "True" : "False");
+}
 
-  tft.fillScreen(TFT_BLACK);
-  tft.drawString("Updating Status...", 30, 100, 12);
+void IRAM_ATTR sendInter(){
+  Send();
+  client.loop();
 }
 
 void IRAM_ATTR switchLight(){
@@ -105,17 +104,26 @@ void IRAM_ATTR switchLight(){
 }
 
 void TimerSetup(){
-  SendTimer = timerBegin(0, 80, true);
-  timerAttachInterrupt(SendTimer, &sendInter ,true);
-  timerAlarmWrite(SendTimer, 500000, true);
-
-
-  SwitchTimer = timerBegin(0, 80, true);
+  SwitchTimer = timerBegin(1, 80, true);
   timerAttachInterrupt(SwitchTimer, &switchLight ,true);
-  timerAlarmWrite(SwitchTimer, 1000000, true);
+  timerAlarmWrite(SwitchTimer, 5000000, true);
+
+  SendTimer = timerBegin(2, 80, true);
+  timerAttachInterrupt(SendTimer, &sendInter ,true);
+  timerAlarmWrite(SendTimer, 1000000, true);
 
   timerAlarmEnable(SendTimer);
   timerAlarmEnable(SwitchTimer);
+}
+
+void TimerDisable(){
+  timerAlarmDisable(SwitchTimer);
+  timerAlarmDisable(SendTimer);
+}
+
+void TimerEnable(){
+  timerAlarmEnable(SwitchTimer);
+  timerAlarmEnable(SendTimer);
 }
 
 void setup() {
@@ -129,12 +137,13 @@ void setup() {
   delay(100);
 
   TimerSetup();
-
 }
 
 void loop() {
   if (!client.connected()){
+    TimerDisable();
     reconnecting();
+    TimerEnable();
   }
   client.loop();
 }

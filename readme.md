@@ -17,3 +17,7 @@ A .net MAUI app was made that contacts the MQTT server and send commands to the 
 - [ ] (Optional) JSON packet to control multiple pins and their states at once
 - [ ] (Optional) Ability to set alternating state 
 - [ ] (Optional) Make ESP32 gui look better
+
+## URGENT
+
+Current version uses interrupts to send mqtt data, however, pubsubclient (the current library) crashes the esp32 every time it attempts to publish from within an interrupt. Fix: Find a new way to connect to mqtt (not PubSubClient)
