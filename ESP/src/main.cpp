@@ -2,6 +2,10 @@
 #include <TFT_eSPI.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <EEPROM.h>
+
+#define EEPROM_SIZE 1
+#define LEDPIN 27
 
 const char* ssid = "Zaid";
 const char* pass = "Holdonbro";
@@ -9,7 +13,8 @@ const char* pass = "Holdonbro";
 const char* mqtt_server = "80.115.248.174";
 
 hw_timer_t *SwitchTimer = NULL;
-hw_timer_t *SendTimer = NULL;
+
+unsigned long lastMillis = 0;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -17,13 +22,12 @@ TFT_eSPI tft=TFT_eSPI();
 
 bool LEDS = false;
 
-void response(String reply){
-  client.publish("Test/Reply", reply.c_str());
-}
-
 void Switch(){
   LEDS = !LEDS;
-  digitalWrite(27, LEDS);
+  digitalWrite(LEDPIN, LEDS);
+
+  EEPROM.write(0, LEDS);
+  EEPROM.commit();
 }
 
 void callBack(char* topic, byte* message, unsigned int length){
@@ -94,11 +98,6 @@ void Send(){
   client.publish("Light/Chip", LEDS ? "True" : "False");
 }
 
-void IRAM_ATTR sendInter(){
-  Send();
-  client.loop();
-}
-
 void IRAM_ATTR switchLight(){
   Switch();
 }
@@ -108,29 +107,27 @@ void TimerSetup(){
   timerAttachInterrupt(SwitchTimer, &switchLight ,true);
   timerAlarmWrite(SwitchTimer, 5000000, true);
 
-  SendTimer = timerBegin(2, 80, true);
-  timerAttachInterrupt(SendTimer, &sendInter ,true);
-  timerAlarmWrite(SendTimer, 1000000, true);
-
-  timerAlarmEnable(SendTimer);
   timerAlarmEnable(SwitchTimer);
 }
 
 void TimerDisable(){
   timerAlarmDisable(SwitchTimer);
-  timerAlarmDisable(SendTimer);
 }
 
 void TimerEnable(){
   timerAlarmEnable(SwitchTimer);
-  timerAlarmEnable(SendTimer);
+}
+
+void EEPROMSetup(){
+  EEPROM.begin(EEPROM_SIZE);
+  LEDS = EEPROM.read(0);
 }
 
 void setup() {
 
   tft.init();
 
-  pinMode(27, OUTPUT);
+  pinMode(LEDPIN, OUTPUT);
   setupWifi();
   delay(100);
   setupMQTT();
@@ -146,4 +143,9 @@ void loop() {
     TimerEnable();
   }
   client.loop();
+
+    if (millis() - lastMillis > 1000) {
+    lastMillis = millis();
+    Send();
+  }
 }
