@@ -26,12 +26,14 @@ namespace PersonalAssignemnt
             client.Connect(clientId);
             client.Subscribe(new string[] { "Light/Chip" }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_MOST_ONCE });
             client.Publish("Light/New", Encoding.Default.GetBytes("Send"));
+            await Task.Yield();
         }
 
         async void LightsSwitched(object sender, EventArgs args)
         {
             if (LedStatus) { client.Publish("Light/Control", Encoding.Default.GetBytes("OFF")); }
             else { client.Publish("Light/Control", Encoding.Default.GetBytes("ON")); }
+            await Task.Yield();
         }
 
         void updateGUI()
@@ -61,6 +63,7 @@ namespace PersonalAssignemnt
             string message = Encoding.UTF8.GetString(e.Message);
             bool.TryParse(message, out LedStatus);
             updateGUI();
+            await Task.Yield();
         }
 
     }

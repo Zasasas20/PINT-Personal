@@ -4,7 +4,7 @@
              x:Class="PersonalAssignemnt.MainPage"
              Title="">
 
-    <ScrollView>
+    <ScrollView HorizontalOptions="Center">
         <StackLayout Orientation="Vertical" HorizontalOptions="Center" VerticalOptions="Center">
             <Label Text="Led Status" FontSize="24"/>
             <Button x:Name="Controller" Text="OFF" BackgroundColor="Red" Clicked="LightsSwitched"/>
