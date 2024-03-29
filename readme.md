@@ -12,7 +12,7 @@ A .net MAUI app was made that contacts the MQTT server and send commands to the 
 - [x] .net MAUI app ESP32 communication
 - [x] Port .net MAUI app to mobile
 - [x] Link ESP32 to LED and test over long range 
-- [ ] (Optional) Timer interrupt on ESP32 for constant status updates
+- [X] (Optional) Timer interrupt on ESP32 for constant status updates
 - [ ] (Optional) Dynamic pins (Sent from ESP32 on connection)
 - [ ] (Optional) JSON packet to control multiple pins and their states at once
 - [ ] (Optional) Ability to set alternating state 
