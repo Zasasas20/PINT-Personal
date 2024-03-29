@@ -7,8 +7,11 @@
 #define EEPROM_SIZE 1
 #define LEDPIN 27
 
-const char* ssid = "Zaid";
-const char* pass = "Holdonbro";
+const char* ssid = "TP-Link_7B03";
+const char* pass = "58015742";
+
+//const char* ssid = "Zaid";
+//const char* pass = "Holdonbro";
 
 const char* mqtt_server = "80.115.248.174";
 
@@ -121,11 +124,15 @@ void TimerEnable(){
 void EEPROMSetup(){
   EEPROM.begin(EEPROM_SIZE);
   LEDS = EEPROM.read(0);
+
+  digitalWrite(LEDPIN, LEDS);
 }
 
 void setup() {
 
   tft.init();
+
+  EEPROMSetup();
 
   pinMode(LEDPIN, OUTPUT);
   setupWifi();
@@ -142,6 +149,12 @@ void loop() {
     reconnecting();
     TimerEnable();
   }
+
+  if (WiFi.status() != WL_CONNECTED){
+    WiFi.disconnect();
+    WiFi.reconnect();
+  }
+
   client.loop();
 
     if (millis() - lastMillis > 1000) {
