@@ -5,10 +5,16 @@
              Title="">
 
     <ScrollView HorizontalOptions="Center">
-        <StackLayout Orientation="Vertical" HorizontalOptions="Center" VerticalOptions="Center">
-            <Label Text="Led Status" FontSize="24"/>
-            <Button x:Name="Controller" Text="OFF" BackgroundColor="Red" Clicked="LightsSwitched"/>
-        </StackLayout>
+        <FlexLayout VerticalOptions="Center" JustifyContent="SpaceEvenly" AlignItems="Center" Wrap="Wrap">
+            <StackLayout Orientation="Vertical" HorizontalOptions="Center" VerticalOptions="Center">
+                <Label Text="Led Status" FontSize="24"/>
+                <Button x:Name="LightController" Text="OFF" BackgroundColor="Red" Clicked="LightsSwitched"/>
+            </StackLayout>
+            <StackLayout Orientation="Vertical" HorizontalOptions="Center" VerticalOptions="Center">
+                <Label Text="Auto Led Transition" FontSize="24"/>
+                <Button x:Name="AutoController" Text="OFF" BackgroundColor="Red" Clicked="AutoSwitched"/>
+            </StackLayout>
+        </FlexLayout>
     </ScrollView>
 
 </ContentPage>

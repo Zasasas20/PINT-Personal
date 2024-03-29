@@ -4,7 +4,7 @@
 #include <PubSubClient.h>
 #include <EEPROM.h>
 
-#define EEPROM_SIZE 1
+#define EEPROM_SIZE 2
 #define LEDPIN 27
 
 const char* ssid = "TP-Link_7B03";
@@ -24,6 +24,7 @@ PubSubClient client(espClient);
 TFT_eSPI tft=TFT_eSPI();
 
 bool LEDS = false;
+bool Auto = false;
 
 void Switch(){
   LEDS = !LEDS;
@@ -31,6 +32,23 @@ void Switch(){
 
   EEPROM.write(0, LEDS);
   EEPROM.commit();
+}
+
+void TimerEnable(){
+  timerAlarmEnable(SwitchTimer);
+}
+
+void TimerDisable(){
+  timerAlarmDisable(SwitchTimer);
+}
+
+void UpdateAuto(){
+  if (Auto){
+    TimerEnable();
+  }
+  else {
+    TimerDisable();
+  }
 }
 
 void callBack(char* topic, byte* message, unsigned int length){
@@ -50,8 +68,17 @@ void callBack(char* topic, byte* message, unsigned int length){
     client.publish("Light/Chip", LEDS ? "True" : "False");
   }
   else {
-    Switch();
-    client.publish("Light/Chip", LEDS ? "True" : "False");
+    if (messageTemp == "AUTO"){
+      Auto = !Auto;
+      EEPROM.write(1, Auto);
+      EEPROM.commit();
+      UpdateAuto();
+      client.publish("Light/ChipA", Auto ? "True" : "False");
+    }
+    else{
+      Switch();
+      client.publish("Light/Chip", LEDS ? "True" : "False");
+    }
   }
   delay(100);
 }
@@ -99,6 +126,7 @@ void reconnecting(){
 
 void Send(){
   client.publish("Light/Chip", LEDS ? "True" : "False");
+  client.publish("Light/ChipA", Auto ? "True" : "False");
 }
 
 void IRAM_ATTR switchLight(){
@@ -110,20 +138,13 @@ void TimerSetup(){
   timerAttachInterrupt(SwitchTimer, &switchLight ,true);
   timerAlarmWrite(SwitchTimer, 5000000, true);
 
-  timerAlarmEnable(SwitchTimer);
-}
-
-void TimerDisable(){
-  timerAlarmDisable(SwitchTimer);
-}
-
-void TimerEnable(){
-  timerAlarmEnable(SwitchTimer);
+  TimerEnable();
 }
 
 void EEPROMSetup(){
   EEPROM.begin(EEPROM_SIZE);
   LEDS = EEPROM.read(0);
+  Auto = EEPROM.read(1);
 
   digitalWrite(LEDPIN, LEDS);
 }
@@ -141,6 +162,7 @@ void setup() {
   delay(100);
 
   TimerSetup();
+  UpdateAuto();
 }
 
 void loop() {
@@ -148,6 +170,7 @@ void loop() {
     TimerDisable();
     reconnecting();
     TimerEnable();
+    UpdateAuto();
   }
 
   if (WiFi.status() != WL_CONNECTED){

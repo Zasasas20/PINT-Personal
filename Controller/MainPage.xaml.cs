@@ -8,6 +8,7 @@ namespace PersonalAssignemnt
     {
         MqttClient client = new MqttClient("80.115.248.174");
         bool LedStatus = false;
+        bool AutoStatus = false;
 
         public MainPage()
         {
@@ -24,44 +25,75 @@ namespace PersonalAssignemnt
             string clientId = Guid.NewGuid().ToString();
             client.MqttMsgPublishReceived += client_MqttMsgPublishReceived;
             client.Connect(clientId);
-            client.Subscribe(new string[] { "Light/Chip" }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_MOST_ONCE });
-            client.Publish("Light/New", Encoding.Default.GetBytes("Send"));
+            client.Subscribe(new string[] { "Light/Chip", "Light/ChipA" }, new byte[] { MqttMsgBase.QOS_LEVEL_AT_MOST_ONCE, MqttMsgBase.QOS_LEVEL_AT_MOST_ONCE }) ;
+            client.Publish("Light/New", Encoding.Default.GetBytes("SEND"));
             await Task.Yield();
         }
 
         async void LightsSwitched(object sender, EventArgs args)
         {
-            if (LedStatus) { client.Publish("Light/Control", Encoding.Default.GetBytes("OFF")); }
-            else { client.Publish("Light/Control", Encoding.Default.GetBytes("ON")); }
+            client.Publish("Light/Control", Encoding.Default.GetBytes("LIGHT"));
+            await Task.Yield();
+        }
+
+        async void AutoSwitched(object sender, EventArgs args)
+        {
+            client.Publish("Light/Control", Encoding.Default.GetBytes("AUTO")); 
             await Task.Yield();
         }
 
         void updateGUI()
         {
 
-                Button button = ((Button)FindByName("Controller"));
+                Button Light = ((Button)FindByName("LightController"));
+                Button Auto = ((Button)FindByName("AutoController"));
                 if (LedStatus)
                 {
                 MainThread.BeginInvokeOnMainThread(() =>
                     {
-                        button.Text = "ON";
-                        button.BackgroundColor = Colors.Green;
+                        Light.Text = "ON";
+                        Light.BackgroundColor = Colors.Green;
                     });
                 }
                 else
                 {
                 MainThread.BeginInvokeOnMainThread(() =>
                     {
-                        button.Text = "OFF";
-                        button.BackgroundColor = Colors.Red;
+                        Light.Text = "OFF";
+                        Light.BackgroundColor = Colors.Red;
                     });
                 }
+
+                if (AutoStatus)
+                {
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        AutoController.Text = "ON";
+                        Auto.BackgroundColor = Colors.Green;
+                    });
+                }
+                else
+                {
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        Auto.Text = "OFF";
+                        Auto.BackgroundColor = Colors.Red;
+                    });
+                }
+
         }
 
         async void client_MqttMsgPublishReceived(object sender, MqttMsgPublishEventArgs e)
         {
             string message = Encoding.UTF8.GetString(e.Message);
-            bool.TryParse(message, out LedStatus);
+            if (e.Topic == "Light/ChipA")
+            {
+                bool.TryParse(message, out AutoStatus);
+            }
+            else
+            {
+                bool.TryParse(message, out LedStatus);
+            }
             updateGUI();
             await Task.Yield();
         }
