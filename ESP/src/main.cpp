@@ -4,7 +4,7 @@
 #include <PubSubClient.h>
 #include <EEPROM.h>
 
-#define EEPROM_SIZE 2
+#define EEPROM_SIZE 4
 #define LEDPIN 27
 
 const char* ssid = "TP-Link_7B03";
@@ -126,6 +126,8 @@ void reconnecting(){
 
 void Send(){
   client.publish("Light/Chip", LEDS ? "True" : "False");
+
+  delay(100);
   client.publish("Light/ChipA", Auto ? "True" : "False");
 }
 
@@ -169,18 +171,20 @@ void loop() {
   if (!client.connected()){
     TimerDisable();
     reconnecting();
-    TimerEnable();
+
+    delay(100);
     UpdateAuto();
   }
 
   if (WiFi.status() != WL_CONNECTED){
     WiFi.disconnect();
+    
+    delay(50);
     WiFi.reconnect();
   }
 
   client.loop();
-
-    if (millis() - lastMillis > 1000) {
+  if (millis() - lastMillis > 1000) {
     lastMillis = millis();
     Send();
   }
